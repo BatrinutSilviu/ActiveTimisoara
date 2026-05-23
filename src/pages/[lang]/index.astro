@@ -1,0 +1,487 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getTranslations, getStaticLangPaths } from '../../i18n/utils';
+
+export function getStaticPaths() {
+  return getStaticLangPaths();
+}
+
+interface Props {
+  params: { lang: string };
+}
+
+const { lang } = Astro.params;
+const t = getTranslations(lang);
+
+const activities = [
+  { emoji: '🎾', name: t.activities.padel_name, desc: lang === 'ro' ? 'Meciuri amicale și turnee Americano pentru toate nivelurile.' : 'Friendly matches and Americano tournaments for all levels.', href: `/${lang}/activities` },
+  { emoji: '🏃', name: t.activities.running_name, desc: lang === 'ro' ? 'Alergări de grup în aer liber, pentru toate ritmurile.' : 'Group runs outdoors, for all paces.', href: `/${lang}/activities` },
+  { emoji: '🚴', name: t.activities.cycling_name, desc: lang === 'ro' ? 'Ture relaxate cu prieteni și oprire la cafea.' : 'Relaxed rides with friends and a coffee stop.', href: `/${lang}/activities` },
+  { emoji: '🥾', name: t.activities.hiking_name, desc: lang === 'ro' ? 'O drumeție pe lună în munții și pădurile din România.' : 'Once a month in the mountains and forests of Romania.', href: `/${lang}/activities` },
+  { emoji: '⚽', name: t.activities.football_name, desc: lang === 'ro' ? 'Fotbal 6 la 6 în atmosferă prietenoasă, indiferent de nivel.' : '6-a-side football in a friendly atmosphere, all levels welcome.', href: `/${lang}/activities` },
+  { emoji: '🏐', name: t.activities.volleyball_name, desc: lang === 'ro' ? 'Pe plajă sau în sală, indiferent de anotimp.' : 'Beach or indoor, no matter the season.', href: `/${lang}/activities` },
+  { emoji: '🏀', name: t.activities.basketball_name, desc: lang === 'ro' ? 'Pickup games 3x3 și 5x5 în aer liber și în sală.' : '3x3 and 5x5 pickup games, outdoors and indoors.', href: `/${lang}/activities` },
+  { emoji: '🎾', name: t.activities.tennis_name, desc: lang === 'ro' ? 'Meciuri între prieteni pe terenurile din oraș.' : 'Matches with friends on courts around the city.', href: `/${lang}/activities` },
+];
+---
+
+<Layout
+  title={t.site.tagline}
+  lang={lang}
+  page="index"
+  t={t}
+>
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="container hero-inner">
+      <div class="hero-logo-wrap">
+        <img src="/logo.png" alt={t.site.name} class="hero-logo" />
+      </div>
+      <h1 class="hero-title">{t.home.hero_title}</h1>
+      <p class="hero-subtitle">{t.home.hero_subtitle}</p>
+      <div class="hero-ctas">
+        <a href={`/${lang}/contact`} class="btn">{t.home.hero_cta_primary}</a>
+        <a href={`/${lang}/calendar`} class="btn-outline">{t.home.hero_cta_secondary}</a>
+      </div>
+    </div>
+    <div class="hero-scroll-indicator" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12l7 7 7-7"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section about-section">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-text">
+          <h2>{t.home.about_title}</h2>
+          <p class="about-subtitle-text">{t.home.about_subtitle}</p>
+          <p>{t.home.about_text}</p>
+          <p>{t.home.about_text2}</p>
+          <div class="stats">
+            <div class="stat">
+              <span class="stat-value" data-count="500" data-suffix="+">500+</span>
+              <span class="stat-label">{lang === 'ro' ? 'Membri' : 'Members'}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" data-count="100" data-suffix="+">100+</span>
+              <span class="stat-label">{lang === 'ro' ? 'Evenimente' : 'Events'}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" data-count="8" data-suffix="+">8+</span>
+              <span class="stat-label">{lang === 'ro' ? 'Sporturi' : 'Sports'}</span>
+            </div>
+          </div>
+        </div>
+        <div class="about-visual" aria-hidden="true">
+          <div class="sport-icons-grid">
+            <div class="sport-icon-cell sport-icon-padel">🎾</div>
+            <div class="sport-icon-cell sport-icon-running">🏃</div>
+            <div class="sport-icon-cell sport-icon-cycling">🚴</div>
+            <div class="sport-icon-cell sport-icon-hiking">🥾</div>
+            <div class="sport-icon-cell sport-icon-football">⚽</div>
+            <div class="sport-icon-cell sport-icon-volleyball">🏐</div>
+            <div class="sport-icon-cell sport-icon-basketball">🏀</div>
+            <div class="sport-icon-cell sport-icon-tennis">🎾</div>
+            <div class="sport-icon-cell sport-icon-others">🤸</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-surface">
+    <div class="container">
+      <div class="section-header">
+        <h2>{t.home.activities_title}</h2>
+        <p>{t.home.activities_subtitle}</p>
+      </div>
+      <div class="activities-grid">
+        {activities.map(activity => (
+          <a href={activity.href} class="activity-card card">
+            <div class="activity-emoji">{activity.emoji}</div>
+            <h3>{activity.name}</h3>
+            <p>{activity.desc}</p>
+            <span class="activity-link">{t.common.learn_more} →</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-banner">
+    <div class="container cta-inner">
+      <h2>{t.home.cta_title}</h2>
+      <p>{t.home.cta_subtitle}</p>
+      <a href={`/${lang}/contact`} class="btn-white">{t.home.cta_button}</a>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  const counters = document.querySelectorAll<HTMLElement>('[data-count]');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target as HTMLElement;
+      const target = parseInt(el.dataset.count!);
+      const suffix = el.dataset.suffix ?? '';
+      const duration = 1400;
+      const start = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(eased * target) + suffix;
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      observer.unobserve(el);
+    });
+  }, { threshold: 0.15 });
+  counters.forEach(el => observer.observe(el));
+</script>
+
+<style>
+  .hero {
+    min-height: calc(100vh - 68px);
+    background: var(--dark);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .hero-glow {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(249, 115, 22, 0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(249, 115, 22, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: 1;
+    padding: 2rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.25rem;
+    width: 100%;
+    max-width: 780px;
+    margin: 0 auto;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .hero-inner {
+      padding: 4rem 1.25rem;
+      align-items: center;
+      gap: 1.5rem;
+    }
+  }
+
+  .hero-logo-wrap {
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  .hero-logo {
+    height: 56px;
+    width: auto;
+    max-width: 100%;
+  }
+
+  @media (min-width: 480px) {
+    .hero-logo {
+      height: 72px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .hero-logo {
+      height: 100px;
+    }
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 8vw, 2.75rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    width: 100%;
+    background: linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.85) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  @media (min-width: 640px) {
+    .hero-title {
+      font-size: 3.75rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-title {
+      font-size: 4.5rem;
+    }
+  }
+
+  .hero-subtitle {
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.7);
+    width: 100%;
+    max-width: 580px;
+  }
+
+  @media (min-width: 768px) {
+    .hero-subtitle {
+      font-size: 1.1875rem;
+    }
+  }
+
+  .hero-ctas {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+    width: 100%;
+    max-width: 320px;
+    margin-top: 0.5rem;
+  }
+
+  @media (min-width: 480px) {
+    .hero-ctas {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      width: auto;
+      max-width: none;
+    }
+  }
+
+  .hero-scroll-indicator {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.35);
+    animation: bounce 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(6px); }
+  }
+
+  .about-section {
+    padding: 2.5rem 0;
+  }
+
+  @media (min-width: 640px) {
+    .about-section {
+      padding: 5rem 0;
+    }
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .about-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+    }
+  }
+
+  .about-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .about-text h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  @media (min-width: 768px) {
+    .about-text h2 {
+      font-size: 2.5rem;
+    }
+  }
+
+  .about-subtitle-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--brand);
+  }
+
+  .about-text p {
+    color: var(--text-muted);
+    line-height: 1.75;
+    font-size: 0.9375rem;
+  }
+
+  .stats {
+    display: flex;
+    gap: 2rem;
+    padding-top: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--brand);
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+  }
+
+  .sport-icons-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .sport-icon-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    font-size: 2.25rem;
+    transition: transform 0.2s ease;
+  }
+
+  .sport-icon-cell:hover {
+    transform: scale(1.05);
+  }
+
+  .sport-icon-running    { background: #dcfce7; }
+  .sport-icon-cycling    { background: #dbeafe; }
+  .sport-icon-hiking     { background: #d1fae5; }
+  .sport-icon-football   { background: #bbf7d0; }
+  .sport-icon-volleyball { background: #ffedd5; }
+  .sport-icon-basketball { background: #fed7aa; }
+  .sport-icon-tennis     { background: #ecfccb; }
+  .sport-icon-padel      { background: #fef3c7; }
+  .sport-icon-others     { background: #e0f2fe; }
+
+  .activities-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 480px) {
+    .activities-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 900px) {
+    .activities-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .activity-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.75rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .activity-emoji {
+    font-size: 2.5rem;
+    line-height: 1;
+  }
+
+  .activity-card h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .activity-card p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    flex: 1;
+  }
+
+  .activity-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--brand);
+    margin-top: auto;
+  }
+
+  .cta-banner {
+    background: var(--brand);
+    padding: 3rem 0;
+  }
+
+  @media (min-width: 640px) {
+    .cta-banner {
+      padding: 5rem 0;
+    }
+  }
+
+  .cta-inner {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .cta-inner h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.03em;
+  }
+
+  @media (min-width: 768px) {
+    .cta-inner h2 {
+      font-size: 2.5rem;
+    }
+  }
+
+  .cta-inner p {
+    font-size: 1.0625rem;
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 480px;
+  }
+</style>

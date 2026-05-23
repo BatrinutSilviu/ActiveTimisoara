@@ -1,0 +1,160 @@
+---
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  lang: string;
+  page: string;
+  description?: string;
+  t: any;
+}
+
+const { title, lang, page, description, t } = Astro.props;
+const otherLang = lang === 'ro' ? 'en' : 'ro';
+const siteDescription = description || t.site.description;
+const fullTitle = `${title} — ${t.site.name}`;
+
+function getAlternatePath(p: string): string {
+  if (p === 'index') return `/${otherLang}/`;
+  return `/${otherLang}/${p}`;
+}
+
+function getCanonicalPath(p: string): string {
+  if (p === 'index') return `/${lang}/`;
+  return `/${lang}/${p}`;
+}
+---
+
+<!DOCTYPE html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={siteDescription} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={siteDescription} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content={lang === 'ro' ? 'ro_RO' : 'en_US'} />
+    <link rel="canonical" href={`https://activetimisoara.ro${getCanonicalPath(page)}`} />
+    <link
+      rel="alternate"
+      hreflang={lang}
+      href={`https://activetimisoara.ro${getCanonicalPath(page)}`}
+    />
+    <link
+      rel="alternate"
+      hreflang={otherLang}
+      href={`https://activetimisoara.ro${getAlternatePath(page)}`}
+    />
+    <link rel="alternate" hreflang="x-default" href="https://activetimisoara.ro/ro/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>{fullTitle}</title>
+  </head>
+  <body>
+    <Nav lang={lang} page={page} t={t} />
+    <main class="main-content">
+      <slot />
+    </main>
+    <Footer lang={lang} t={t} />
+
+    <!-- Back to top button -->
+    <button id="back-to-top" aria-label="Back to top" title="Back to top">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 15l-6-6-6 6"/>
+      </svg>
+    </button>
+  </body>
+</html>
+
+<style is:global>
+  .main-content {
+    padding-top: 68px;
+  }
+
+  /* ── Scroll reveal ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Back to top ── */
+  #back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 1.5rem;
+    z-index: 200;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.35);
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+    transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.2s ease;
+    pointer-events: none;
+  }
+
+  #back-to-top.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+
+  #back-to-top:hover {
+    box-shadow: 0 6px 22px rgba(249, 115, 22, 0.5);
+    transform: translateY(-2px) scale(1.05);
+  }
+
+  #back-to-top:active {
+    transform: translateY(0) scale(0.97);
+  }
+</style>
+
+<script>
+  // Scroll reveal
+  const revealEls = document.querySelectorAll<HTMLElement>(
+    '.card, .stat, .section-header, .activity-card, .contact-card, .sponsor-card, .review-card, .app-card'
+  );
+  revealEls.forEach(el => {
+    if (el.getBoundingClientRect().top < window.innerHeight * 0.92) return;
+    el.classList.add('reveal');
+  });
+  const revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+  // Back to top
+  const btt = document.getElementById('back-to-top')!;
+  const onScroll = () => {
+    btt.classList.toggle('is-visible', window.scrollY > 400);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>

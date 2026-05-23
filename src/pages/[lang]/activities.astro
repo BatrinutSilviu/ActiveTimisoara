@@ -1,0 +1,345 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getTranslations, getStaticLangPaths } from '../../i18n/utils';
+
+export function getStaticPaths() {
+  return getStaticLangPaths();
+}
+
+const { lang } = Astro.params;
+const t = getTranslations(lang);
+
+const activities = [
+  {
+    emoji: '🎾',
+    sport: 'padel',
+    name: t.activities.padel_name,
+    desc: t.activities.padel_desc,
+    schedule: t.activities.padel_schedule,
+    color: '#fef3c7',
+    badgeClass: 'badge-padel',
+    whatsapp: 'https://chat.whatsapp.com/LV08jcw4AVE93ftjExiEu1',
+    appHref: 'https://padel.activetimisoara.ro',
+    appLabel: t.apps.padel_button,
+  },
+  {
+    emoji: '🏃',
+    sport: 'running',
+    name: t.activities.running_name,
+    desc: t.activities.running_desc,
+    schedule: t.activities.running_schedule,
+    color: '#dcfce7',
+    badgeClass: 'badge-running',
+    whatsapp: 'https://chat.whatsapp.com/DJNDErr4qRGBoHZ8642AJ8',
+  },
+  {
+    emoji: '🚴',
+    sport: 'cycling',
+    name: t.activities.cycling_name,
+    desc: t.activities.cycling_desc,
+    schedule: t.activities.cycling_schedule,
+    color: '#dbeafe',
+    badgeClass: 'badge-cycling',
+    whatsapp: 'https://chat.whatsapp.com/DN7yE7f6RFHJM11XzSEru0',
+  },
+  {
+    emoji: '🥾',
+    sport: 'hiking',
+    name: t.activities.hiking_name,
+    desc: t.activities.hiking_desc,
+    schedule: t.activities.hiking_schedule,
+    color: '#d1fae5',
+    badgeClass: 'badge-hiking',
+    whatsapp: 'https://chat.whatsapp.com/Lya5v7yx6eeI8IJhBhC3G7',
+  },
+  {
+    emoji: '⚽',
+    sport: 'football',
+    name: t.activities.football_name,
+    desc: t.activities.football_desc,
+    schedule: t.activities.football_schedule,
+    color: '#bbf7d0',
+    badgeClass: 'badge-football',
+    whatsapp: 'https://chat.whatsapp.com/CbL5UriANrLBOBu95BjgSq',
+  },
+  {
+    emoji: '🏐',
+    sport: 'volleyball',
+    name: t.activities.volleyball_name,
+    desc: t.activities.volleyball_desc,
+    schedule: t.activities.volleyball_schedule,
+    color: '#ffedd5',
+    badgeClass: 'badge-volleyball',
+    whatsapp: 'https://chat.whatsapp.com/Ek3Xm0GYTj26OxUPYXPj4b',
+  },
+  {
+    emoji: '🏀',
+    sport: 'basketball',
+    name: t.activities.basketball_name,
+    desc: t.activities.basketball_desc,
+    schedule: t.activities.basketball_schedule,
+    color: '#fed7aa',
+    badgeClass: 'badge-basketball',
+    whatsapp: 'https://chat.whatsapp.com/CNwXFKZizaE7Ekz0MHb1Qc',
+  },
+  {
+    emoji: '🎾',
+    sport: 'tennis',
+    name: t.activities.tennis_name,
+    desc: t.activities.tennis_desc,
+    schedule: t.activities.tennis_schedule,
+    color: '#ecfccb',
+    badgeClass: 'badge-tennis',
+    whatsapp: 'https://chat.whatsapp.com/BF1EWcC2UaPBRvacckNjma',
+  },
+];
+---
+
+<Layout
+  title={t.activities.title}
+  lang={lang}
+  page="activities"
+  t={t}
+>
+  <section class="page-hero">
+    <div class="container page-hero-inner">
+      <h1>{t.activities.title}</h1>
+      <p>{t.activities.subtitle}</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="activities-list">
+        {activities.map((activity, i) => (
+          <article class={`activity-card card ${i % 2 === 1 ? 'activity-card--reverse' : ''}`}>
+            <div class="activity-visual" style={`background: ${activity.color};`}>
+              <span class="activity-emoji" aria-hidden="true">{activity.emoji}</span>
+              <span class={`badge ${activity.badgeClass}`}>{activity.name}</span>
+            </div>
+            <div class="activity-content">
+              <h2>{activity.name}</h2>
+              <p class="activity-desc">{activity.desc}</p>
+              <div class="activity-meta">
+                <div class="activity-schedule">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                  </svg>
+                  <span>{t.activities.schedule}: <strong>{activity.schedule}</strong></span>
+                </div>
+              </div>
+              <div class="activity-ctas">
+                <a href={`/${lang}/calendar?sport=${activity.sport}`} class="btn btn-activity">
+                  {t.activities.see_calendar} →
+                </a>
+                <a
+                  href={activity.whatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn-outline-dark btn-activity"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+                  </svg>
+                  {lang === 'ro' ? 'Grup WhatsApp' : 'WhatsApp group'}
+                </a>
+                {activity.appHref && (
+                  <a
+                    href={activity.appHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn-outline-dark btn-activity"
+                  >
+                    {activity.appLabel}
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                      <polyline points="15 3 21 3 21 9"/>
+                      <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                  </a>
+                )}
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div class="others-card card">
+        <div class="others-icons" aria-hidden="true">🤸 🏊 🧗 🥊 🏒 🎯 🛶 ⛷️</div>
+        <h2>{t.activities.others_title}</h2>
+        <p>
+          {lang === 'ro'
+            ? 'Comunitatea noastră este deschisă oricărui sport. Dacă nu ai găsit ce cauți, scrie-ne și vom organiza împreună activități pentru sportul tău preferat.'
+            : "Our community is open to any sport. If you didn't find what you're looking for, get in touch and we'll organize activities for your favourite sport together."}
+        </p>
+        <a href={`/${lang}/contact`} class="btn">{t.activities.others_cta}</a>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+
+  .activities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .activity-card {
+    display: grid;
+    grid-template-columns: 1fr;
+    overflow: hidden;
+  }
+
+  @media (min-width: 768px) {
+    .activity-card {
+      grid-template-columns: 360px 1fr;
+    }
+
+    .activity-card--reverse {
+      direction: rtl;
+    }
+
+    .activity-card--reverse > * {
+      direction: ltr;
+    }
+  }
+
+  .activity-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem 2rem;
+    min-height: 200px;
+  }
+
+  @media (min-width: 768px) {
+    .activity-visual {
+      min-height: 280px;
+    }
+  }
+
+  .activity-emoji {
+    font-size: 5rem;
+    line-height: 1;
+  }
+
+  .activity-content {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  @media (min-width: 768px) {
+    .activity-content {
+      padding: 2.5rem;
+    }
+  }
+
+  .activity-content h2 {
+    font-size: 1.625rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .activity-desc {
+    color: var(--text-muted);
+    line-height: 1.75;
+    font-size: 0.9375rem;
+  }
+
+  .activity-meta {
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .activity-schedule {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  .activity-schedule svg {
+    flex-shrink: 0;
+    color: var(--brand);
+  }
+
+  .activity-schedule strong {
+    color: var(--text);
+  }
+
+  .activity-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .btn-activity {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .others-card {
+    margin-top: 2rem;
+    padding: 3rem 2.5rem;
+    text-align: center;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .others-icons {
+    font-size: 2rem;
+    letter-spacing: 0.15em;
+    line-height: 1.8;
+  }
+
+  .others-card h2 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .others-card p {
+    color: var(--text-muted);
+    max-width: 520px;
+    line-height: 1.7;
+    font-size: 0.9375rem;
+  }
+
+  @media (max-width: 640px) {
+    .activity-content {
+      padding: 1.5rem;
+    }
+    .activity-ctas {
+      flex-direction: column;
+    }
+    .activity-ctas .btn,
+    .activity-ctas .btn-outline-dark {
+      width: 100%;
+      justify-content: center;
+    }
+    .others-card {
+      padding: 2rem 1.25rem;
+    }
+    .others-icons {
+      font-size: 1.5rem;
+      letter-spacing: 0.1em;
+      word-break: break-word;
+    }
+  }
+</style>

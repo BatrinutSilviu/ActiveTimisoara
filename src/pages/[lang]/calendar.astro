@@ -1,0 +1,944 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { getTranslations } from '../../i18n/utils';
+import { sanityClient } from '../../lib/sanity';
+import type { SanityEvent, SanityRecurringEvent } from '../../lib/sanity';
+
+const { lang } = Astro.params;
+if (!lang || (lang !== 'ro' && lang !== 'en')) {
+  return Astro.redirect('/ro/calendar');
+}
+
+const t = getTranslations(lang);
+const isRo = lang === 'ro';
+
+const initialFilter = Astro.url.searchParams.get('sport') ?? 'all';
+
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const in30Days = new Date(today); in30Days.setDate(in30Days.getDate() + 30);
+const in60Days = new Date(today); in60Days.setDate(in60Days.getDate() + 60);
+
+function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+const todayStr = toLocalDateStr(today);
+const end30Str = toLocalDateStr(in30Days);
+const end60Str = toLocalDateStr(in60Days);
+
+const [oneOffEvents, recurringConfigs] = await Promise.all([
+  sanityClient.fetch<SanityEvent[]>(
+    `*[_type == "event" && (
+        (special != true && date >= $today && date <= $end30) ||
+        (special == true  && date >= $today && date <= $end60)
+      )] | order(date asc) {
+      _id, title_ro, title_en, date, end_date, sport,
+      location_ro, location_en, special, notes_ro, notes_en
+    }`,
+    { today: todayStr, end30: end30Str, end60: end60Str }
+  ),
+  sanityClient.fetch<SanityRecurringEvent[]>(
+    `*[_type == "recurringEvent" && active == true] {
+      _id, title_ro, title_en, sport, dayOfWeek,
+      time_start, time_end, location_ro, location_en, notes_ro, notes_en
+    }`
+  ),
+]);
+
+const DAY_INDEX: Record<string, number> = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
+};
+
+// Generate one occurrence per week for each recurring config, within the next 30 days
+function generateOccurrences(configs: SanityRecurringEvent[], from: Date, to: Date): SanityEvent[] {
+  const events: SanityEvent[] = [];
+  for (const cfg of configs) {
+    const targetDay = DAY_INDEX[cfg.dayOfWeek];
+    const cursor = new Date(from);
+    const daysUntil = (targetDay - cursor.getDay() + 7) % 7;
+    cursor.setDate(cursor.getDate() + daysUntil);
+    while (cursor <= to) {
+      const dateStr = toLocalDateStr(cursor);
+      const timeLabel = cfg.time_start
+        ? (cfg.time_end ? ` ${cfg.time_start}–${cfg.time_end}` : ` ${cfg.time_start}`)
+        : '';
+      events.push({
+        _id: `recurring-${cfg._id}-${dateStr}`,
+        title_ro: cfg.title_ro + (timeLabel ? ` ·${timeLabel}` : ''),
+        title_en: cfg.title_en + (timeLabel ? ` ·${timeLabel}` : ''),
+        date: dateStr,
+        sport: cfg.sport,
+        location_ro: cfg.location_ro,
+        location_en: cfg.location_en,
+        special: false,
+        time: timeLabel ? timeLabel.trim() : undefined,
+        notes_ro: cfg.notes_ro,
+        notes_en: cfg.notes_en,
+      });
+      cursor.setDate(cursor.getDate() + 7);
+    }
+  }
+  return events;
+}
+
+const recurringOccurrences = generateOccurrences(recurringConfigs, today, in30Days);
+
+// Merge and sort; one-off events take precedence over recurring on same date+sport
+const recurringKeys = new Set(oneOffEvents.map(e => `${e.date}-${e.sport}`));
+const filtered = recurringOccurrences.filter(e => !recurringKeys.has(`${e.date}-${e.sport}`));
+const allEvents = [...oneOffEvents, ...filtered].sort((a, b) => a.date.localeCompare(b.date));
+
+const sportLabels: Record<string, string> = {
+  padel:      'Padel',
+  running:    isRo ? 'Alergare'  : 'Running',
+  cycling:    isRo ? 'Ciclism'   : 'Cycling',
+  hiking:     isRo ? 'Drumeție'  : 'Hiking',
+  football:   isRo ? 'Fotbal'    : 'Football',
+  volleyball: isRo ? 'Volei'     : 'Volleyball',
+  basketball: isRo ? 'Baschet'   : 'Basketball',
+  tennis:     isRo ? 'Tenis'     : 'Tennis',
+};
+
+const sportFilters = [
+  { label: t.calendar.filter_all, slug: 'all' },
+  { label: isRo ? 'Alergare'  : 'Running',    slug: 'running' },
+  { label: isRo ? 'Ciclism'   : 'Cycling',    slug: 'cycling' },
+  { label: isRo ? 'Drumeție'  : 'Hiking',     slug: 'hiking' },
+  { label: isRo ? 'Fotbal'    : 'Football',   slug: 'football' },
+  { label: isRo ? 'Volei'     : 'Volleyball', slug: 'volleyball' },
+  { label: isRo ? 'Baschet'   : 'Basketball', slug: 'basketball' },
+  { label: isRo ? 'Tenis'     : 'Tennis',     slug: 'tennis' },
+  { label: 'Padel',                            slug: 'padel' },
+];
+
+function formatDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(
+    isRo ? 'ro-RO' : 'en-GB',
+    { weekday: 'short', day: 'numeric', month: 'long' }
+  );
+}
+
+function formatDateRange(start: string, end?: string): string {
+  if (!end || end === start) return formatDate(start);
+  const [sy, sm, sd] = start.split('-').map(Number);
+  const [ey, em, ed] = end.split('-').map(Number);
+  const s = new Date(sy, sm - 1, sd);
+  const e = new Date(ey, em - 1, ed);
+  const locale = isRo ? 'ro-RO' : 'en-GB';
+  if (sm === em && sy === ey) {
+    return `${sd}–${e.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  }
+  return `${s.toLocaleDateString(locale, { day: 'numeric', month: 'long' })} – ${e.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+}
+
+function isRecurring(id: string) { return id.startsWith('recurring-'); }
+
+// Group events by date for calendar grid view
+const eventsByDate = new Map<string, SanityEvent[]>();
+for (const event of allEvents) {
+  if (!eventsByDate.has(event.date)) eventsByDate.set(event.date, []);
+  eventsByDate.get(event.date)!.push(event);
+}
+
+interface CalDay {
+  dateStr: string | null;
+  dayNum: number | null;
+  events: SanityEvent[];
+  isToday: boolean;
+  isPast: boolean;
+  isWeekend: boolean;
+}
+
+function buildMonthGrid(year: number, month: number): CalDay[][] {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDow = (firstDay.getDay() + 6) % 7; // Mon=0 … Sun=6
+  const weeks: CalDay[][] = [];
+  let week: CalDay[] = [];
+  for (let i = 0; i < startDow; i++)
+    week.push({ dateStr: null, dayNum: null, events: [], isToday: false, isPast: false, isWeekend: i >= 5 });
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dow = week.length; // 0=Mon…6=Sun
+    week.push({ dateStr, dayNum: d, events: eventsByDate.get(dateStr) ?? [], isToday: dateStr === todayStr, isPast: dateStr < todayStr, isWeekend: dow >= 5 });
+    if (week.length === 7) { weeks.push(week); week = []; }
+  }
+  if (week.length > 0) {
+    while (week.length < 7) {
+      const dow = week.length;
+      week.push({ dateStr: null, dayNum: null, events: [], isToday: false, isPast: false, isWeekend: dow >= 5 });
+    }
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+const calMonths = [0, 1].map(offset => {
+  const d = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+  return {
+    label: d.toLocaleDateString(isRo ? 'ro-RO' : 'en-GB', { month: 'long', year: 'numeric' }),
+    grid: buildMonthGrid(d.getFullYear(), d.getMonth()),
+  };
+});
+
+const calMonthEvents = [0, 1].map(offset => {
+  const d = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+  const y = d.getFullYear(), mo = d.getMonth() + 1;
+  return allEvents.filter(e => {
+    const [ey, em] = e.date.split('-').map(Number);
+    return ey === y && em === mo;
+  });
+});
+
+const weekDayLabels = isRo
+  ? ['Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm', 'Dum']
+  : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+---
+
+<Layout title={t.calendar.title} lang={lang} page="calendar" t={t}>
+  <section class="page-hero">
+    <div class="container page-hero-inner">
+      <h1>{t.calendar.title}</h1>
+      <p>{t.calendar.subtitle}</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+
+      <div class="controls-bar">
+        <div class="filter-bar" role="group" aria-label="Filter events">
+          {sportFilters.map(f => (
+            <button class={`filter-btn${f.slug === initialFilter ? ' filter-btn--active' : ''}`} data-filter={f.slug}
+              aria-pressed={f.slug === initialFilter ? 'true' : 'false'}>
+              {f.slug !== 'all' && <span class={`filter-dot badge-${f.slug}`}></span>}
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        <div class="sport-dropdown" id="sport-dropdown">
+          <button class="sport-dropdown-trigger" id="sport-dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">
+            <span id="sport-dropdown-label">{sportFilters.find(f => f.slug === initialFilter)?.label}</span>
+            <svg class="sport-dropdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+          <div class="sport-dropdown-menu" role="listbox" id="sport-dropdown-menu">
+            {sportFilters.map(f => (
+              <button
+                class={`sport-dropdown-opt${f.slug === initialFilter ? ' sport-dropdown-opt--active' : ''}`}
+                data-filter={f.slug}
+                role="option"
+                aria-selected={f.slug === initialFilter ? 'true' : 'false'}
+              >
+                {f.slug !== 'all'
+                  ? <span class={`sdd-dot badge-${f.slug}`}></span>
+                  : <span class="sdd-dot sdd-dot--all"></span>
+                }
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div class="view-toggle" role="group" aria-label={isRo ? 'Mod de afișare' : 'View mode'}>
+          <button class="view-btn view-btn--active" data-view="list" aria-pressed="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            {isRo ? 'Listă' : 'List'}
+          </button>
+          <button class="view-btn" data-view="calendar" aria-pressed="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            {isRo ? 'Calendar' : 'Calendar'}
+          </button>
+        </div>
+      </div>
+
+      <!-- LIST VIEW -->
+      <div id="view-list">
+        {allEvents.length === 0 ? (
+          <p class="no-events-msg">
+            {isRo ? 'Nu sunt evenimente programate în perioada următoare.' : 'No events scheduled in the coming period.'}
+          </p>
+        ) : (
+          <div class="events-list" id="events-list">
+            {allEvents.map(event => (
+              <article
+                class={`event-card card${event.special ? ' event-card--special' : ''}`}
+                data-sport={event.sport}
+              >
+                {event.special && (
+                  <div class="special-banner">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    {isRo ? 'Eveniment special' : 'Special event'}
+                  </div>
+                )}
+                <div class="event-main">
+                  <div class="event-date-col">
+                    <span class="event-date">{formatDateRange(event.date, event.end_date)}</span>
+                    {isRecurring(event._id) && (
+                      <span class="recurring-badge" title={isRo ? 'Eveniment săptămânal' : 'Weekly event'}>
+                        ↻ {isRo ? 'Săptămânal' : 'Weekly'}
+                      </span>
+                    )}
+                  </div>
+                  <div class="event-info">
+                    <span class={`badge badge-${event.sport}`}>{sportLabels[event.sport]}</span>
+                    <h3 class="event-title">{isRo ? event.title_ro : event.title_en}</h3>
+                    {(isRo ? event.location_ro : event.location_en) && (
+                      <div class="event-location">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        {isRo ? event.location_ro : event.location_en}
+                      </div>
+                    )}
+                    {(isRo ? event.notes_ro : event.notes_en) && (
+                      <p class="event-notes">{isRo ? event.notes_ro : event.notes_en}</p>
+                    )}
+                  </div>
+                  <div class="event-cta">
+                    <a href={`/${lang}/contact`} class="btn">{t.calendar.register}</a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+        <p class="no-events-msg" id="no-events-msg" style="display:none;">
+          {isRo ? 'Niciun eveniment găsit pentru filtrul selectat.' : 'No events found for the selected filter.'}
+        </p>
+      </div>
+
+      <!-- CALENDAR GRID VIEW -->
+      <div id="view-calendar" style="display:none;">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" id="cal-prev" aria-label={isRo ? 'Luna anterioară' : 'Previous month'} disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <span class="cal-month-title" id="cal-month-label">{calMonths[0].label}</span>
+          <button class="cal-nav-btn" id="cal-next" aria-label={isRo ? 'Luna următoare' : 'Next month'}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        {calMonths.map((m, mi) => (
+          <div class="cal-month-grid" data-month-idx={mi} style={mi > 0 ? 'display:none;' : ''}>
+            <div class="cal-weekdays">
+              {weekDayLabels.map(d => <div class="cal-wday">{d}</div>)}
+            </div>
+            <div class="cal-days">
+              {m.grid.flat().map(day => (
+                <div class={`cal-day${!day.dateStr ? ' cal-day--empty' : ''}${day.isWeekend ? ' cal-day--weekend' : ''}${day.isToday ? ' cal-day--today' : ''}${day.isPast ? ' cal-day--past' : ''}`}>
+                  {day.dayNum && <span class="cal-day-num">{day.dayNum}</span>}
+                  <div class="cal-chips">
+                    {day.events.map(e => (
+                      <span class={`cal-chip badge-${e.sport}`} data-sport={e.sport} title={isRo ? e.title_ro : e.title_en}>
+                        <span class="cal-chip-text">{sportLabels[e.sport]}</span>
+                        {e.time && <span class="cal-chip-time">{e.time}</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div id="cal-month-labels" data-labels={JSON.stringify(calMonths.map(m => m.label))} style="display:none;"></div>
+
+        <div class="cal-mobile-events">
+          {[0, 1].map(mi => {
+            const monthEvts = calMonthEvents[mi];
+            return (
+              <div class="cal-mobile-month" data-month-idx={mi} style={mi > 0 ? 'display:none;' : ''}>
+                {monthEvts.length === 0 ? (
+                  <p class="cal-mobile-empty">{isRo ? 'Niciun eveniment în această lună.' : 'No events this month.'}</p>
+                ) : monthEvts.map(event => {
+                  const loc = isRo ? event.location_ro : event.location_en;
+                  const notes = isRo ? event.notes_ro : event.notes_en;
+                  return (
+                    <div class="cal-mobile-row cal-mobile-row--expandable" data-sport={event.sport}>
+                      <div class="cal-mobile-summary">
+                        <span class={`cal-mobile-dot badge-${event.sport}`}></span>
+                        <span class="cal-mobile-date">{formatDate(event.date)}</span>
+                        <span class="cal-mobile-sport">{sportLabels[event.sport]}</span>
+                        <span class="cal-mobile-chevron">›</span>
+                      </div>
+                      <div class="cal-mobile-detail">
+                        <span class="cal-detail-title">{isRo ? event.title_ro : event.title_en}</span>
+                        {loc && <span class="cal-detail-loc">{loc}</span>}
+                        {notes && <span class="cal-detail-notes">{notes}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+    </div>
+  </section>
+</Layout>
+
+<script>
+  const filterBtns = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
+  const eventCards = document.querySelectorAll<HTMLElement>('.event-card');
+  const calChips = document.querySelectorAll<HTMLElement>('.cal-chip');
+  const calMobileRows = document.querySelectorAll<HTMLElement>('.cal-mobile-row');
+  const noEventsMsg = document.getElementById('no-events-msg');
+
+  // Custom dropdown
+  const dropdown = document.getElementById('sport-dropdown');
+  const dropdownTrigger = document.getElementById('sport-dropdown-trigger');
+  const dropdownLabel = document.getElementById('sport-dropdown-label');
+  const dropdownOpts = document.querySelectorAll<HTMLButtonElement>('.sport-dropdown-opt');
+
+  dropdownTrigger?.addEventListener('click', e => {
+    e.stopPropagation();
+    dropdown?.classList.toggle('sport-dropdown--open');
+    dropdownTrigger.setAttribute('aria-expanded', dropdown?.classList.contains('sport-dropdown--open') ? 'true' : 'false');
+  });
+
+  document.addEventListener('click', () => {
+    dropdown?.classList.remove('sport-dropdown--open');
+    dropdownTrigger?.setAttribute('aria-expanded', 'false');
+  });
+
+  dropdownOpts.forEach(opt => {
+    opt.addEventListener('click', e => {
+      e.stopPropagation();
+      const filter = opt.dataset.filter!;
+      dropdownOpts.forEach(o => { o.classList.remove('sport-dropdown-opt--active'); o.setAttribute('aria-selected', 'false'); });
+      opt.classList.add('sport-dropdown-opt--active');
+      opt.setAttribute('aria-selected', 'true');
+      if (dropdownLabel) dropdownLabel.textContent = opt.textContent?.trim() ?? '';
+      dropdown?.classList.remove('sport-dropdown--open');
+      dropdownTrigger?.setAttribute('aria-expanded', 'false');
+      // sync desktop pills
+      filterBtns.forEach(b => { b.classList.remove('filter-btn--active'); b.setAttribute('aria-pressed', 'false'); });
+      document.querySelector<HTMLButtonElement>(`.filter-btn[data-filter="${filter}"]`)?.classList.add('filter-btn--active');
+      applyFilter(filter);
+    });
+  });
+
+  function applyFilter(filter: string) {
+    // List view
+    let visible = 0;
+    eventCards.forEach(card => {
+      const show = filter === 'all' || card.dataset.sport === filter;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    if (noEventsMsg) noEventsMsg.style.display = visible === 0 ? 'block' : 'none';
+    // Calendar grid chips
+    calChips.forEach(chip => {
+      chip.style.display = filter === 'all' || chip.dataset.sport === filter ? '' : 'none';
+    });
+    // Mobile events list
+    calMobileRows.forEach(row => {
+      row.style.display = filter === 'all' || row.dataset.sport === filter ? '' : 'none';
+    });
+  }
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => { b.classList.remove('filter-btn--active'); b.setAttribute('aria-pressed', 'false'); });
+      btn.classList.add('filter-btn--active');
+      btn.setAttribute('aria-pressed', 'true');
+      const filter = btn.dataset.filter!;
+      // sync dropdown
+      dropdownOpts.forEach(o => { o.classList.remove('sport-dropdown-opt--active'); o.setAttribute('aria-selected', 'false'); });
+      const matchOpt = document.querySelector<HTMLButtonElement>(`.sport-dropdown-opt[data-filter="${filter}"]`);
+      if (matchOpt) { matchOpt.classList.add('sport-dropdown-opt--active'); matchOpt.setAttribute('aria-selected', 'true'); if (dropdownLabel) dropdownLabel.textContent = matchOpt.textContent?.trim() ?? ''; }
+      applyFilter(filter);
+    });
+  });
+
+  // Apply initial filter from URL param
+  const activeBtn = document.querySelector<HTMLButtonElement>('.filter-btn[aria-pressed="true"]');
+  if (activeBtn && activeBtn.dataset.filter !== 'all') applyFilter(activeBtn.dataset.filter!);
+
+  // View toggle
+  const viewBtns = document.querySelectorAll<HTMLButtonElement>('.view-btn');
+  const listView = document.getElementById('view-list')!;
+  const calView = document.getElementById('view-calendar')!;
+
+  viewBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      viewBtns.forEach(b => { b.classList.remove('view-btn--active'); b.setAttribute('aria-pressed', 'false'); });
+      btn.classList.add('view-btn--active');
+      btn.setAttribute('aria-pressed', 'true');
+      const isCalendar = btn.dataset.view === 'calendar';
+      listView.style.display = isCalendar ? 'none' : '';
+      calView.style.display = isCalendar ? '' : 'none';
+    });
+  });
+
+  // Calendar month navigation
+  const monthGrids = document.querySelectorAll<HTMLElement>('.cal-month-grid');
+  const mobilePanels = document.querySelectorAll<HTMLElement>('.cal-mobile-month');
+  const monthLabelEl = document.getElementById('cal-month-label')!;
+  const monthLabels: string[] = JSON.parse(
+    (document.getElementById('cal-month-labels') as HTMLElement).dataset.labels!
+  );
+  const prevBtn = document.getElementById('cal-prev') as HTMLButtonElement;
+  const nextBtn = document.getElementById('cal-next') as HTMLButtonElement;
+  let currentMonth = 0;
+
+  function goToMonth(idx: number) {
+    monthGrids[currentMonth].style.display = 'none';
+    if (mobilePanels[currentMonth]) mobilePanels[currentMonth].style.display = 'none';
+    currentMonth = idx;
+    monthGrids[currentMonth].style.display = '';
+    if (mobilePanels[currentMonth]) mobilePanels[currentMonth].style.display = '';
+    monthLabelEl.textContent = monthLabels[currentMonth];
+    prevBtn.disabled = currentMonth === 0;
+    nextBtn.disabled = currentMonth === monthGrids.length - 1;
+  }
+
+  // Expandable mobile rows
+  document.querySelectorAll<HTMLElement>('.cal-mobile-row--expandable').forEach(row => {
+    row.addEventListener('click', () => row.classList.toggle('cal-mobile-row--open'));
+  });
+
+  prevBtn.addEventListener('click', () => { if (currentMonth > 0) goToMonth(currentMonth - 1); });
+  nextBtn.addEventListener('click', () => { if (currentMonth < monthGrids.length - 1) goToMonth(currentMonth + 1); });
+  nextBtn.disabled = monthGrids.length <= 1;
+</script>
+
+<style>
+.controls-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; flex: 1; }
+  .filter-btn {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    padding: 0.5rem 1.125rem; border-radius: 100px;
+    border: 1.5px solid var(--border); background: #ffffff;
+    font-size: 0.875rem; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .filter-btn:hover { border-color: var(--brand); color: var(--brand); }
+  .filter-btn--active { background: var(--brand); border-color: var(--brand); color: #ffffff; font-weight: 600; }
+  .filter-btn--active:hover { color: #ffffff; }
+  .filter-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .filter-dot.badge-padel      { background: #b45309; }
+  .filter-dot.badge-running    { background: #16a34a; }
+  .filter-dot.badge-cycling    { background: #2563eb; }
+  .filter-dot.badge-hiking     { background: #059669; }
+  .filter-dot.badge-football   { background: #15803d; }
+  .filter-dot.badge-volleyball { background: #ea580c; }
+  .filter-dot.badge-basketball { background: #c2410c; }
+  .filter-dot.badge-tennis     { background: #4d7c0f; }
+  .filter-btn--active .filter-dot { background: rgba(255,255,255,0.85); }
+
+  .events-list { display: flex; flex-direction: column; gap: 1rem; }
+
+  .event-card { overflow: hidden; }
+  .event-card--special { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand), var(--shadow-sm); }
+
+  .special-banner {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--brand); color: #ffffff;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 0.4rem 1.25rem;
+  }
+
+  .event-main {
+    display: grid; grid-template-columns: 1fr;
+    gap: 1rem; padding: 1.25rem 1.5rem 1.5rem; align-items: center;
+  }
+  @media (min-width: 640px) {
+    .event-main { grid-template-columns: 160px 1fr auto; gap: 1.5rem; }
+  }
+
+  .event-date-col { display: flex; flex-direction: column; gap: 0.375rem; }
+
+  .event-date { font-size: 0.875rem; font-weight: 700; color: var(--text); line-height: 1.4; }
+
+  .recurring-badge {
+    font-size: 0.7rem; font-weight: 600; color: var(--text-muted);
+    letter-spacing: 0.03em;
+  }
+
+  .event-info { display: flex; flex-direction: column; gap: 0.375rem; min-width: 0; }
+  .event-date-col { min-width: 0; }
+  .event-title { font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em; overflow-wrap: break-word; }
+  .event-location { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; color: var(--text-muted); }
+  .event-location svg { flex-shrink: 0; }
+  .event-notes { margin-top: 0.25rem; font-size: 0.8125rem; color: var(--text-muted); line-height: 1.5; font-style: italic; }
+
+  .no-events-msg { text-align: center; color: var(--text-muted); padding: 3rem 0; font-size: 0.9375rem; }
+
+  /* View toggle */
+  .view-toggle {
+    display: flex;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .view-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.45rem 0.875rem;
+    background: #fff;
+    border: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .view-btn + .view-btn { border-left: 1.5px solid var(--border); }
+  .view-btn--active { background: var(--surface); color: var(--text); font-weight: 600; }
+  .view-btn:hover:not(.view-btn--active) { color: var(--brand); }
+
+  /* Calendar grid */
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .cal-nav-btn {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem;
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text);
+    transition: all 0.15s ease;
+  }
+
+  .cal-nav-btn:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+  .cal-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .cal-month-title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-transform: capitalize;
+  }
+
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .cal-wday {
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .cal-wday:nth-child(6),
+  .cal-wday:nth-child(7) {
+    color: var(--brand);
+  }
+
+  .cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border: 1px solid var(--border);
+    border-radius: 0 0 var(--radius) var(--radius);
+    overflow: hidden;
+  }
+
+  .cal-day {
+    min-height: 90px;
+    padding: 0.4rem;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .cal-day:nth-child(7n) { border-right: none; }
+
+  .cal-day--empty { background: var(--surface); }
+  .cal-day--weekend { background: #fafafa; }
+  .cal-day--empty.cal-day--weekend { background: #f4f4f4; }
+  .cal-day--past { opacity: 0.45; }
+
+  .cal-day-num {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text);
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .cal-day--today .cal-day-num {
+    background: var(--brand);
+    color: #fff;
+  }
+
+  .cal-chips { display: flex; flex-direction: column; gap: 2px; }
+
+  .cal-chip {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 3px;
+    border-radius: 3px;
+    padding: 2px 4px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    overflow: hidden;
+    cursor: default;
+    line-height: 1.3;
+  }
+
+  .cal-chip-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+  }
+
+  .cal-chip-time {
+    font-size: 0.575rem;
+    font-weight: 500;
+    opacity: 0.8;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 480px) {
+    .cal-chip-text { display: none; }
+    .cal-chip-time { display: none; }
+    .cal-chip { width: 100%; height: 5px; padding: 0; border-radius: 2px; }
+    .cal-chip.badge-padel      { background: #b45309; }
+    .cal-chip.badge-running    { background: #16a34a; }
+    .cal-chip.badge-cycling    { background: #2563eb; }
+    .cal-chip.badge-hiking     { background: #059669; }
+    .cal-chip.badge-football   { background: #15803d; }
+    .cal-chip.badge-volleyball { background: #ea580c; }
+    .cal-chip.badge-basketball { background: #c2410c; }
+    .cal-chip.badge-tennis     { background: #4d7c0f; }
+    .cal-day { min-height: 52px; padding: 0.25rem; }
+  }
+
+  .filter-bar { display: none; }
+  .cal-mobile-events { display: none; }
+
+  .sport-dropdown {
+    display: block;
+    position: relative;
+    min-width: 180px;
+  }
+  .sport-dropdown-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .sport-dropdown-trigger:hover { border-color: var(--brand); }
+  .sport-dropdown--open .sport-dropdown-trigger {
+    border-color: var(--brand);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .sport-dropdown-chevron {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+  }
+  .sport-dropdown--open .sport-dropdown-chevron { transform: rotate(180deg); }
+  .sport-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1.5px solid var(--brand);
+    border-top: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    z-index: 200;
+    overflow: hidden;
+  }
+  .sport-dropdown--open .sport-dropdown-menu { display: block; }
+  .sport-dropdown-opt {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+  }
+  .sport-dropdown-opt:last-child { border-bottom: none; }
+  .sport-dropdown-opt:hover { background: var(--surface); }
+  .sport-dropdown-opt--active {
+    color: var(--brand);
+    font-weight: 700;
+    background: rgba(249,115,22,0.05);
+  }
+  .sdd-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .sdd-dot--all { background: var(--border); }
+  .sdd-dot.badge-padel      { background: #b45309; }
+  .sdd-dot.badge-running    { background: #16a34a; }
+  .sdd-dot.badge-cycling    { background: #2563eb; }
+  .sdd-dot.badge-hiking     { background: #059669; }
+  .sdd-dot.badge-football   { background: #15803d; }
+  .sdd-dot.badge-volleyball { background: #ea580c; }
+  .sdd-dot.badge-basketball { background: #c2410c; }
+  .sdd-dot.badge-tennis     { background: #4d7c0f; }
+
+  @media (max-width: 639px) {
+    .controls-bar {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .view-toggle { flex-shrink: 0; }
+    .sport-dropdown { flex: 1; min-width: 0; }
+    .event-main { grid-template-columns: 1fr; }
+    .event-cta .btn { width: 100%; }
+    .cal-mobile-events { display: block; }
+    .cal-mobile-events {
+      margin-top: 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .cal-mobile-empty {
+      padding: 1rem 0.875rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    .cal-mobile-row {
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+    .cal-mobile-row:last-child { border-bottom: none; }
+    .cal-mobile-row--expandable { cursor: pointer; }
+    .cal-mobile-row--expandable:active { background: var(--surface); }
+    .cal-mobile-summary {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.625rem 0.875rem;
+    }
+    .cal-mobile-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .cal-mobile-dot.badge-padel      { background: #b45309; }
+    .cal-mobile-dot.badge-running    { background: #16a34a; }
+    .cal-mobile-dot.badge-cycling    { background: #2563eb; }
+    .cal-mobile-dot.badge-hiking     { background: #059669; }
+    .cal-mobile-dot.badge-football   { background: #15803d; }
+    .cal-mobile-dot.badge-volleyball { background: #ea580c; }
+    .cal-mobile-dot.badge-basketball { background: #c2410c; }
+    .cal-mobile-dot.badge-tennis     { background: #4d7c0f; }
+    .cal-mobile-date {
+      color: var(--text-muted);
+      font-size: 0.8125rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .cal-mobile-sport {
+      font-weight: 600;
+      flex: 1;
+    }
+    .cal-detail-title {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .cal-mobile-chevron {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-left: auto;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+    .cal-mobile-row--open .cal-mobile-chevron { transform: rotate(90deg); }
+    .cal-mobile-detail {
+      display: none;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0 0.875rem 0.625rem 2.125rem;
+      font-size: 0.8125rem;
+    }
+    .cal-mobile-row--open .cal-mobile-detail { display: flex; }
+    .cal-detail-loc { color: var(--text-muted); }
+    .cal-detail-notes { color: var(--text-muted); font-style: italic; }
+  }
+</style>

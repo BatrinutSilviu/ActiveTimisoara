@@ -1,0 +1,331 @@
+---
+interface Props {
+  lang: string;
+  page: string;
+  t: any;
+}
+const { lang, page, t } = Astro.props;
+const otherLang = lang === 'ro' ? 'en' : 'ro';
+
+const navLinks = [
+  { key: 'home', href: `/${lang}/`, slug: 'index' },
+  { key: 'activities', href: `/${lang}/activities`, slug: 'activities' },
+  { key: 'calendar', href: `/${lang}/calendar`, slug: 'calendar' },
+  { key: 'sponsors', href: `/${lang}/sponsors`, slug: 'sponsors' },
+  { key: 'reviews', href: `/${lang}/reviews`, slug: 'reviews' },
+  { key: 'contact', href: `/${lang}/contact`, slug: 'contact' },
+  { key: 'apps', href: `/${lang}/apps`, slug: 'apps' },
+];
+
+function getAlternatePage(page: string): string {
+  if (page === 'index') return `/${otherLang}/`;
+  return `/${otherLang}/${page}`;
+}
+---
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href={`/${lang}/`} class="nav-logo" aria-label={t.site.name}>
+      <img src="/logo.png" alt={t.site.name} height="40" />
+    </a>
+
+    <!-- Desktop links -->
+    <div class="nav-links">
+      {navLinks.map(link => (
+        <a href={link.href} class={`nav-link${page === link.slug ? ' nav-link--active' : ''}`}>
+          {t.nav[link.key]}
+        </a>
+      ))}
+      <a href={getAlternatePage(page)} class="btn btn-lang" aria-label={`Switch to ${otherLang.toUpperCase()}`}>
+        {t.nav.language_switch}
+      </a>
+    </div>
+
+    <!-- Mobile hamburger -->
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile drawer overlay -->
+<div class="nav-overlay" id="nav-overlay" aria-hidden="true"></div>
+
+<!-- Mobile drawer -->
+<div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+  <div class="nav-drawer-handle"></div>
+  <div class="nav-drawer-inner">
+    <div class="nav-drawer-logo">
+      <img src="/logo.png" alt={t.site.name} height="38" style="filter: brightness(1.15);" />
+    </div>
+    <div class="nav-drawer-links">
+      {navLinks.map(link => (
+        <a href={link.href} class={`nav-drawer-link${page === link.slug ? ' nav-drawer-link--active' : ''}`}>
+          {t.nav[link.key]}
+          {page === link.slug && <span class="nav-drawer-active-dot"></span>}
+        </a>
+      ))}
+    </div>
+    <div class="nav-drawer-footer">
+      <a href={getAlternatePage(page)} class="nav-drawer-lang">
+        {t.nav.language_switch}
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const hamburger = document.getElementById('nav-hamburger')!;
+  const overlay = document.getElementById('nav-overlay')!;
+  const drawer = document.getElementById('nav-drawer')!;
+
+  function openMenu() {
+    overlay.removeAttribute('aria-hidden');
+    drawer.removeAttribute('aria-hidden');
+    overlay.classList.add('nav-overlay--open');
+    drawer.classList.add('nav-drawer--open');
+    hamburger.setAttribute('aria-expanded', 'true');
+    hamburger.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMenu() {
+    overlay.setAttribute('aria-hidden', 'true');
+    drawer.setAttribute('aria-hidden', 'true');
+    overlay.classList.remove('nav-overlay--open');
+    drawer.classList.remove('nav-drawer--open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    hamburger.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  hamburger.addEventListener('click', () => {
+    drawer.classList.contains('nav-drawer--open') ? closeMenu() : openMenu();
+  });
+
+  overlay.addEventListener('click', closeMenu);
+
+  drawer.querySelectorAll('.nav-drawer-link').forEach(link => {
+    link.addEventListener('click', closeMenu);
+  });
+</script>
+
+<style>
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    height: 68px;
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    gap: 1rem;
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .nav-logo img { height: 40px; width: auto; }
+
+  /* ── Desktop links ── */
+  .nav-links {
+    display: none;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    border-radius: 8px;
+    transition: color 0.15s ease, background 0.15s ease;
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .nav-link:hover { color: var(--text); background: var(--surface); }
+
+  .nav-link--active { color: var(--brand); font-weight: 600; }
+
+  .nav-link--active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0.75rem; right: 0.75rem;
+    height: 2px;
+    background: var(--brand);
+    border-radius: 2px;
+  }
+
+  .btn-lang {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-left: 0.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .nav-links { display: flex; }
+    .nav-hamburger { display: none; }
+    .nav-overlay, .nav-drawer { display: none !important; }
+  }
+
+  /* ── Hamburger ── */
+  .nav-hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 40px; height: 40px;
+    padding: 8px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .nav-hamburger:hover { background: var(--surface); }
+
+  .nav-hamburger span {
+    display: block;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    transform-origin: center;
+  }
+
+  .nav-hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav-hamburger.is-open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .nav-hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ── Overlay ── */
+  .nav-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 101;
+    background: rgba(10, 15, 30, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .nav-overlay--open {
+    display: block;
+    opacity: 1;
+  }
+
+  /* ── Drawer ── */
+  .nav-drawer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 102;
+    background: var(--dark);
+    border-radius: 20px 20px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
+  .nav-drawer--open { transform: translateY(0); }
+
+  .nav-drawer-handle {
+    width: 36px; height: 4px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 2px;
+    margin: 1rem auto 0;
+  }
+
+  .nav-drawer-inner {
+    padding: 1.25rem 1.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .nav-drawer-logo {
+    display: flex;
+    align-items: center;
+  }
+
+  .nav-drawer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .nav-drawer-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: -0.01em;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  .nav-drawer-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .nav-drawer-link--active {
+    color: #fff;
+    background: rgba(249, 115, 22, 0.15);
+  }
+
+  .nav-drawer-active-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--brand);
+    flex-shrink: 0;
+  }
+
+  .nav-drawer-footer {
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .nav-drawer-lang {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1.25rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 100px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 0.15s ease;
+  }
+
+  .nav-drawer-lang:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
+  }
+</style>
