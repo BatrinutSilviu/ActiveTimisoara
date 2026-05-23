@@ -181,12 +181,6 @@ function getAlternatePage(page: string): string {
     margin-left: 0.5rem;
   }
 
-  @media (min-width: 900px) {
-    .nav-links { display: flex; }
-    .nav-hamburger { display: none; }
-    .nav-overlay, .nav-drawer { display: none !important; }
-  }
-
   /* ── Hamburger ── */
   .nav-hamburger {
     display: flex;
@@ -327,5 +321,11 @@ function getAlternatePage(page: string): string {
   .nav-drawer-lang:hover {
     border-color: rgba(255, 255, 255, 0.5);
     color: #fff;
+  }
+
+  @media (min-width: 900px) {
+    .nav-links { display: flex; }
+    .nav-hamburger { display: none; }
+    .nav-overlay, .nav-drawer { display: none !important; }
   }
 </style>
