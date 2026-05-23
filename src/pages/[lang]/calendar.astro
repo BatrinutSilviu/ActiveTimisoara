@@ -32,24 +32,30 @@ const todayStr = toLocalDateStr(today);
 const end30Str = toLocalDateStr(in30Days);
 const end60Str = toLocalDateStr(in60Days);
 
-const [oneOffEvents, recurringConfigs] = await Promise.all([
-  sanityClient.fetch<SanityEvent[]>(
-    `*[_type == "event" && (
-        (special != true && date >= $today && date <= $end30) ||
-        (special == true  && date >= $today && date <= $end60)
-      )] | order(date asc) {
-      _id, title_ro, title_en, date, end_date, sport,
-      location_ro, location_en, special, notes_ro, notes_en
-    }`,
-    { today: todayStr, end30: end30Str, end60: end60Str }
-  ),
-  sanityClient.fetch<SanityRecurringEvent[]>(
-    `*[_type == "recurringEvent" && active == true] {
-      _id, title_ro, title_en, sport, dayOfWeek,
-      time_start, time_end, location_ro, location_en, notes_ro, notes_en
-    }`
-  ),
-]);
+let oneOffEvents: SanityEvent[] = [];
+let recurringConfigs: SanityRecurringEvent[] = [];
+try {
+  [oneOffEvents, recurringConfigs] = await Promise.all([
+    sanityClient.fetch<SanityEvent[]>(
+      `*[_type == "event" && (
+          (special != true && date >= $today && date <= $end30) ||
+          (special == true  && date >= $today && date <= $end60)
+        )] | order(date asc) {
+        _id, title_ro, title_en, date, end_date, sport,
+        location_ro, location_en, special, notes_ro, notes_en
+      }`,
+      { today: todayStr, end30: end30Str, end60: end60Str }
+    ),
+    sanityClient.fetch<SanityRecurringEvent[]>(
+      `*[_type == "recurringEvent" && active == true] {
+        _id, title_ro, title_en, sport, dayOfWeek,
+        time_start, time_end, location_ro, location_en, notes_ro, notes_en
+      }`
+    ),
+  ]);
+} catch (err) {
+  console.error('Sanity fetch failed:', err);
+}
 
 const DAY_INDEX: Record<string, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,

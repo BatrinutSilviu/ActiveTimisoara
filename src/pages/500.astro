@@ -1,0 +1,66 @@
+---
+export const prerender = false;
+---
+
+<!DOCTYPE html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eroare server — Active Timișoara</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #fff8f5;
+        color: #1a1a1a;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+      .box {
+        text-align: center;
+        max-width: 420px;
+      }
+      .code {
+        font-size: 5rem;
+        font-weight: 800;
+        color: #f97316;
+        line-height: 1;
+        margin-bottom: 1rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+      }
+      p {
+        color: #555;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+      }
+      a {
+        display: inline-block;
+        background: #f97316;
+        color: #fff;
+        padding: 0.625rem 1.5rem;
+        border-radius: 100px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      a:hover { background: #ea6a0a; }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="code">500</div>
+      <h1>Eroare de server</h1>
+      <p>A apărut o problemă temporară. Te rugăm să încerci din nou.</p>
+      <a href="/ro/">Înapoi acasă</a>
+    </div>
+  </body>
+</html>
