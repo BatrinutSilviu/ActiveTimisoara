@@ -30,8 +30,9 @@ export const translations = {
       follow_us: 'Urmărește-ne',
     },
     home: {
-      hero_title: 'Move - Meet - Repeat',
-      hero_subtitle: 'Sportul e mai frumos în grup. Alătură-te comunității sportive din Timișoara.',
+      hero_title: 'Move · Meet · Repeat',
+      hero_subtitle_1: 'Sportul e mai frumos în grup.',
+      hero_subtitle_2: 'Alătură-te comunității sportive!',
       hero_cta_primary: 'Alătură-te acum',
       hero_cta_secondary: 'Vezi evenimentele',
       about_title: 'Despre noi',
@@ -169,8 +170,9 @@ export const translations = {
       follow_us: 'Follow us',
     },
     home: {
-      hero_title: 'Move - Meet - Repeat',
-      hero_subtitle: 'Sport is better in a group. Join Timișoara\'s sports community.',
+      hero_title: 'Move · Meet · Repeat',
+      hero_subtitle_1: 'Sport is better in a group.',
+      hero_subtitle_2: 'Join the sports community!',
       hero_cta_primary: 'Join now',
       hero_cta_secondary: 'See events',
       about_title: 'About us',

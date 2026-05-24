@@ -26,13 +26,13 @@ const t = getTranslations(lang);
   <section class="section">
     <div class="container">
       <div class="sponsors-grid">
-        <a class="sponsor-card card" href="https://liftbox.ro/" target="_blank" rel="noopener noreferrer">
-          <div class="sponsor-logo">
-            <img src="/sponsors/liftbox.png" alt="L.I.F.T. BOX by Health Studio" />
+        <a class="sponsor-card card" href="https://www.activearena.ro/" target="_blank" rel="noopener noreferrer">
+          <div class="sponsor-logo sponsor-logo--contain">
+            <img src="/sponsors/active-arena.png" alt="Active Arena" />
           </div>
           <div class="sponsor-info">
-            <h2>L.I.F.T. BOX</h2>
-            <p>by Health Studio</p>
+            <h2>Active Arena</h2>
+            <p>Sport Complex</p>
           </div>
         </a>
         <a class="sponsor-card card" href="https://www.instagram.com/motiv.specialty.coffee/" target="_blank" rel="noopener noreferrer">
@@ -44,13 +44,22 @@ const t = getTranslations(lang);
             <p>Specialty Coffee</p>
           </div>
         </a>
-        <a class="sponsor-card card" href="https://www.activearena.ro/" target="_blank" rel="noopener noreferrer">
-          <div class="sponsor-logo sponsor-logo--contain">
-            <img src="/sponsors/active-arena.png" alt="Active Arena" />
+        <a class="sponsor-card card" href="https://haipizza.ro/" target="_blank" rel="noopener noreferrer">
+          <div class="sponsor-logo sponsor-logo--contain sponsor-logo--tight">
+            <img src="/sponsors/pizza-and-wine.png" alt="Pizza and Wine" />
           </div>
           <div class="sponsor-info">
-            <h2>Active Arena</h2>
-            <p>Sport Complex</p>
+            <h2>Hai</h2>
+            <p>Pizza and Wine</p>
+          </div>
+        </a>
+        <a class="sponsor-card card" href="https://liftbox.ro/" target="_blank" rel="noopener noreferrer">
+          <div class="sponsor-logo">
+            <img src="/sponsors/liftbox.png" alt="L.I.F.T. BOX by Health Studio" />
+          </div>
+          <div class="sponsor-info">
+            <h2>L.I.F.T. BOX</h2>
+            <p>by Health Studio</p>
           </div>
         </a>
       </div>
@@ -113,6 +122,10 @@ const t = getTranslations(lang);
   .sponsor-logo--contain img {
     object-fit: contain;
     padding: 14px;
+  }
+
+  .sponsor-logo--tight img {
+    padding: 0;
   }
 
   .sponsor-info h2 {
