@@ -133,6 +133,7 @@ export const translations = {
       padel_button: 'Accesează platforma',
       hiking_name: 'Active Hiking',
       hiking_desc: 'Planifică drumeții, descoperă trasee noi și conectează-te cu grupul de drumeție.',
+      hiking_button: 'Accesează platforma',
       coming_soon: 'În curând',
     },
     common: {
@@ -273,6 +274,7 @@ export const translations = {
       padel_button: 'Open platform',
       hiking_name: 'Active Hiking',
       hiking_desc: 'Plan hikes, discover new trails and connect with the hiking group.',
+      hiking_button: 'Open platform',
       coming_soon: 'Coming soon',
     },
     common: {

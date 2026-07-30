@@ -18,6 +18,7 @@ Presentation website for the **Active Timisoara** sports community, hosted at `a
 | App | Domain |
 |-----|--------|
 | Padel (racket sport) | `padel.activetimisoara.ro` |
+| Hikes (hiking) | `hikes.activetimisoara.ro` |
 
 > Add future sport-specific apps to this table as they are created.
 

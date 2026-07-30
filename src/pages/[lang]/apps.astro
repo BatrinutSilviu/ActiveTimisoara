@@ -70,28 +70,39 @@ const t = getTranslations(lang);
           </div>
         </div>
 
-        <div class="app-card app-card--coming-soon card">
+        <div class="app-card app-card--active card">
           <div class="app-icon app-icon--hiking">🥾</div>
           <div class="app-content">
-            <div class="app-status app-status--soon">
-              {t.apps.coming_soon}
+            <div class="app-status app-status--live">
+              <span class="status-dot"></span>
+              {lang === 'ro' ? 'Disponibil acum' : 'Available now'}
             </div>
             <h2>{t.apps.hiking_name}</h2>
             <p>{t.apps.hiking_desc}</p>
-            <div class="app-features coming-soon-features">
-              <span class="feature-chip feature-chip--muted">
+            <div class="app-features">
+              <span class="feature-chip">
                 {lang === 'ro' ? 'Trasee' : 'Trails'}
               </span>
-              <span class="feature-chip feature-chip--muted">
+              <span class="feature-chip">
                 {lang === 'ro' ? 'Planificare' : 'Planning'}
               </span>
-              <span class="feature-chip feature-chip--muted">
+              <span class="feature-chip">
                 {lang === 'ro' ? 'Grup' : 'Group'}
               </span>
             </div>
-            <button class="btn btn-disabled" disabled aria-disabled="true">
-              {t.apps.coming_soon}
-            </button>
+            <a
+              href={`https://hikes.activetimisoara.ro/${lang}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn"
+            >
+              {t.apps.hiking_button}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </a>
           </div>
         </div>
       </div>
@@ -151,6 +162,7 @@ const t = getTranslations(lang);
 
   .app-icon--hiking {
     background: #d1fae5;
+    filter: none;
   }
 
   .app-content {
