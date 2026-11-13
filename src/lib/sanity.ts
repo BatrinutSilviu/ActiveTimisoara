@@ -8,7 +8,7 @@ export const sanityClient = createClient({
   token: import.meta.env.SANITY_READ_TOKEN,
 });
 
-export type Sport = 'padel' | 'running' | 'cycling' | 'hiking' | 'football' | 'volleyball' | 'basketball' | 'tennis';
+export type Sport = 'padel' | 'running' | 'cycling' | 'hiking' | 'football' | 'volleyball' | 'basketball' | 'tennis' | 'other';
 
 export interface SanityEvent {
   _id: string;
