@@ -18,15 +18,13 @@ Presentation website for the **Active Timisoara** sports community, hosted at `a
 | App | Domain |
 |-----|--------|
 | Padel (racket sport) | `padel.activetimisoara.ro` |
-| Hikes (hiking) | `hikes.activetimisoara.ro` |
+| Hikes (hiking) and other events | `hikes.activetimisoara.ro` |
+| Management (admins only) | `management.activetimisoara.ro` |
 
 > Add future sport-specific apps to this table as they are created.
 
 ## Current State
 
-`index.html` — under-construction placeholder with a redirect button to the padel site.
-
-## Tech Notes
-
-- No framework decided yet; keep the initial page plain HTML/CSS
-- When building out the full site, confirm stack choice with the user before starting
+Astro site, server-rendered on Vercel (push to `main` deploys), content from Sanity. The calendar
+(`src/pages/[lang]/calendar.astro`) also shows the apps' events from the management app's public feed
+(`src/lib/communityFeed.ts`, https://management.activetimisoara.ro/api/public/calendar).

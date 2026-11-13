@@ -1,43 +1,27 @@
-# Astro Starter Kit: Minimal
+# Act!ve Timișoara — presentation site
 
-```sh
-npm create astro@latest -- --template minimal
+activetimisoara.ro: the community's site — activities, the events calendar, partners, reviews,
+contact and links to the apps. Romanian and English (`/ro/…`, `/en/…`).
+
+Astro (server-rendered on Vercel) with content from Sanity (project "Active Timișoara").
+
+## Run locally
+
+```bash
+npm install
+npm run dev        # http://localhost:4321 — needs the Sanity variables in .env (see src/lib/sanity.ts)
+npm run build
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Where things are
 
-## 🚀 Project Structure
+- `src/pages/[lang]/` — the pages; `calendar.astro` is the events calendar
+- `src/lib/sanity.ts` — Sanity client and content types
+- `src/lib/communityFeed.ts` — the apps' events (padel, hikes, other events) from the management app's
+  public feed, merged into the calendar with their sign-up links
+- `src/i18n/` — Romanian and English texts
+- `studio/` — the Sanity Studio (not part of the site build)
 
-Inside of your Astro project, you'll see the following folders and files:
+## Deploy
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Pushing to `main` deploys on Vercel.
