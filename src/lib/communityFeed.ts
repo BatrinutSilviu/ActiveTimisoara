@@ -29,12 +29,15 @@ interface FeedEvent {
 }
 
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-// The apps' sport names (English or Romanian) → the site's sports.
+// The feed's sport is one of the management app's event types (it owns that list:
+// https://management.activetimisoara.ro/api/public/event-types) → the site's sports (the Sanity
+// list). A type with no matching sport here shows under its own name, in the "other" colour.
+// Romanian names are kept for older events.
 const SPORTS: Record<string, Sport> = {
   padel: 'padel',
   hiking: 'hiking', drumetie: 'hiking', drumetii: 'hiking', 'via ferrata': 'hiking',
   running: 'running', alergare: 'running', alergat: 'running',
-  cycling: 'cycling', ciclism: 'cycling', bicicleta: 'cycling',
+  biking: 'cycling', cycling: 'cycling', ciclism: 'cycling', bicicleta: 'cycling',
   football: 'football', fotbal: 'football',
   volleyball: 'volleyball', volei: 'volleyball',
   basketball: 'basketball', baschet: 'basketball',
